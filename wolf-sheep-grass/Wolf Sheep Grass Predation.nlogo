@@ -1,4 +1,4 @@
-globals [ max-sheep ]  ; don't let the sheep population grow too large
+globals [ max-sheep max-wolves ]  ; don't let the sheep population grow too large
 
 ; Sheep and wolves are both breeds of turtles
 breed [ sheep a-sheep ]  ; sheep is its own plural, so we use "a-sheep" as the singular
@@ -11,6 +11,7 @@ patches-own [ sunlight-water-level grass-energy grass-growth-rate ]    ; this is
 to setup
   clear-all
   ifelse netlogo-web? [ set max-sheep 1000 ] [ set max-sheep 3000 ]
+  ifelse netlogo-web? [ set max-wolves 1000 ] [ set max-wolves 3000 ]
 
   color-patches
 
@@ -39,7 +40,8 @@ to setup
     set energy random (2 * wolf-gain-from-food)
     setxy random-xcor random-ycor
   ]
-  display-labels
+  display-turtles-labels
+  display-patches-labels
   reset-ticks
 end
 
@@ -57,9 +59,15 @@ end
 
 to go
   ; stop the model if there are no wolves and no sheep
-  if not any? turtles [ stop ]
+  if not any? turtles [ user-message "Only the grass survived" stop ]
   ; stop the model if there are no wolves and the number of sheep gets very large
-  if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited the earth" stop ]
+  if not any? wolves and count sheep > 0 [ user-message "Only the sheep and the grass survived" stop ]
+  if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited" stop ]
+  if not any? sheep and count wolves > max-wolves [ user-message "The wolves have inherited" stop ]
+  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves > max-wolves [ user-message "Only the wolves survived" stop ]
+  ;if not any? patches with [pcolor = green] and count sheep > 0 and count wolves > 0 [ user-message "Only the wolves and the sheep survived" stop ]
+  if not any? sheep and count wolves > max-wolves [ user-message "Only the wolves and the grass survived" stop ]
+  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves = 0 [ user-message "Neither the wolves nor the sheep nor the grass survived" stop ]
 
   ask sheep [
     move
@@ -86,7 +94,8 @@ to go
   ]
 
   tick
-  display-labels
+  display-turtles-labels
+  display-patches-labels
 end
 
 to move  ; turtle procedure
@@ -111,16 +120,31 @@ end
 
 to reproduce-sheep  ; sheep procedure
   if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
-    set energy (energy / 2)                ; divide energy between parent and offspring
-    hatch 1 [ rt random-float 360 fd 1 ]   ; hatch an offspring and move it forward 1 step
+    if any? other sheep-here [
+      let my-friend one-of other sheep-here
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
+    ]
   ]
+
+
+  ;if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
+    ;set energy (energy / 2)                ; divide energy between parent and offspring
+    ;hatch 1 [ rt random-float 360 fd 1 ]   ; hatch an offspring and move it forward 1 step
+  ;]
 end
 
 to reproduce-wolves  ; wolf procedure
   if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
-    set energy (energy / 2)               ; divide energy between parent and offspring
-    hatch 1 [ rt random-float 360 fd 1 ]  ; hatch an offspring and move it forward 1 step
+    if any? other wolves-here [
+      let my-friend one-of other wolves-here
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
+    ]
   ]
+
+  ;if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
+   ; set energy (energy / 2)               ; divide energy between parent and offspring
+    ;hatch 1 [ rt random-float 360 fd 1 ]  ; hatch an offspring and move it forward 1 step
+  ;]
 end
 
 to reproduce-grass
@@ -181,26 +205,32 @@ to-report grass
 end
 
 
-to display-labels
+to display-turtles-labels
   ask turtles [ set label "" ]
-  if show-energy? [
+  if show-turtles-energy? [
     ask wolves [ set label round energy ]
     ask sheep [ set label round energy ]
   ]
 end
 
+to display-patches-labels
+  ask patches [ set plabel "" ]
+  if show-patches-energy? [
+    ask patches [ set plabel round grass-energy set plabel-color black ]
+  ]
+end
 
 ; Copyright 1997 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-410
-35
-928
-554
+385
+15
+954
+585
 -1
 -1
-10.0
+11.0
 1
 14
 1
@@ -229,7 +259,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-124.0
+193.0
 1
 1
 NIL
@@ -244,7 +274,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0.0
 50.0
-26.0
+36.0
 1.0
 1
 NIL
@@ -259,7 +289,7 @@ sheep-reproduce
 sheep-reproduce
 1.0
 20.0
-9.0
+8.0
 1.0
 1
 %
@@ -274,7 +304,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-138.0
+133.0
 1
 1
 NIL
@@ -289,7 +319,7 @@ wolf-gain-from-food
 wolf-gain-from-food
 0.0
 100.0
-18.0
+17.0
 1.0
 1
 NIL
@@ -313,13 +343,13 @@ HORIZONTAL
 SLIDER
 25
 290
-217
+200
 323
 grass-gain-from-sun-water
 grass-gain-from-sun-water
 0
 100
-13.0
+59.0
 1
 1
 NIL
@@ -433,18 +463,18 @@ Wolf settings
 0
 
 SWITCH
-145
-340
-281
-373
-show-energy?
-show-energy?
-0
+25
+355
+200
+388
+show-turtles-energy?
+show-turtles-energy?
+1
 1
 -1000
 
 SLIDER
-210
+205
 290
 370
 323
@@ -452,7 +482,7 @@ grass-reproduce
 grass-reproduce
 0
 100
-3.0
+11.0
 1
 1
 %
@@ -467,7 +497,7 @@ initial-number-green-patches
 initial-number-green-patches
 0
 2500
-977.0
+762.0
 1
 1
 NIL
@@ -489,6 +519,27 @@ TEXTBOX
 180
 33
 Initial settings
+12
+0.0
+1
+
+SWITCH
+205
+355
+370
+388
+show-patches-energy?
+show-patches-energy?
+1
+1
+-1000
+
+TEXTBOX
+30
+330
+180
+348
+Show energy?
 12
 0.0
 1
