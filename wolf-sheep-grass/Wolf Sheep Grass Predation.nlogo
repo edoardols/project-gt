@@ -12,9 +12,12 @@ to setup
   clear-all
   ifelse netlogo-web? [ set max-sheep 1000 ] [ set max-sheep 3000 ]
 
+  color-patches
+
   ask patches [
-    set pcolor one-of [ green brown ]
-    if pcolor = green [ set grass-energy (random-float 10) + 1 ]
+    ;set pcolor one-of [ green brown ]
+    ;set n-of initial-number-grass patches green
+    if pcolor = green [ set grass-energy random (2 * grass-gain-from-sun-water)  ]
     if pcolor = brown [ set grass-energy 0]
   ]
 
@@ -38,6 +41,18 @@ to setup
   ]
   display-labels
   reset-ticks
+end
+
+to color-patches
+  let num-to-color initial-number-green-patches
+  let colored-patches 0
+
+  ask patches [
+    ifelse colored-patches < num-to-color [
+      set pcolor green
+      set colored-patches colored-patches + 1
+    ] [set pcolor brown]
+  ]
 end
 
 to go
@@ -64,7 +79,7 @@ to go
 
   ask patches with [ pcolor = green ] [
     set sunlight-water-level ( sin ticks + 1 )
-    set grass-energy (grass-energy - 1)
+    set grass-energy (grass-energy - 2)
     grow-grass
     grass-death
     reproduce-grass
@@ -120,7 +135,7 @@ end
 to hatch-grass
     let parent-energy grass-energy
     let reproduce? false
-    ask one-of neighbors with [ pcolor = brown ][
+    ask patches in-radius 3 with [ pcolor = brown ][
       set pcolor green
       set grass-energy (parent-energy / 2)
       set reproduce? true
@@ -149,7 +164,7 @@ end
 
 to grow-grass  ; patch procedure
 
-  set grass-energy grass-energy + (grass-gain-from-sun-and-water * sunlight-water-level)
+  set grass-energy grass-energy + (grass-gain-from-sun-water * sunlight-water-level)
 
 end
 
@@ -179,10 +194,10 @@ end
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-355
-10
-873
-529
+410
+35
+928
+554
 -1
 -1
 10.0
@@ -199,122 +214,122 @@ GRAPHICS-WINDOW
 25
 -25
 25
-0
-0
+1
+1
 1
 ticks
 30.0
 
 SLIDER
-5
-10
-179
-43
+25
+35
+199
+68
 initial-number-sheep
 initial-number-sheep
 0
 250
-105.0
+124.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-5
-196
-179
-229
+25
+190
+199
+223
 sheep-gain-from-food
 sheep-gain-from-food
 0.0
 50.0
-16.0
+26.0
 1.0
 1
 NIL
 HORIZONTAL
 
 SLIDER
-5
-231
-179
-264
+25
+225
+199
+258
 sheep-reproduce
 sheep-reproduce
 1.0
 20.0
-2.0
+9.0
 1.0
 1
 %
 HORIZONTAL
 
 SLIDER
-185
-10
-350
-43
+205
+35
+370
+68
 initial-number-wolves
 initial-number-wolves
 0
 250
-110.0
+138.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-183
-195
-348
-228
+203
+189
+368
+222
 wolf-gain-from-food
 wolf-gain-from-food
 0.0
 100.0
-21.0
+18.0
 1.0
 1
 NIL
 HORIZONTAL
 
 SLIDER
-183
-231
-348
-264
+203
+225
+368
+258
 wolf-reproduce
 wolf-reproduce
 0.0
 20.0
-10.0
+4.0
 1.0
 1
 %
 HORIZONTAL
 
 SLIDER
-40
-50
-252
-83
-grass-gain-from-sun-and-water
-grass-gain-from-sun-and-water
+25
+290
+217
+323
+grass-gain-from-sun-water
+grass-gain-from-sun-water
 0
 100
-56.0
+13.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-40
-140
-109
-173
+130
+120
+199
+153
 setup
 setup
 NIL
@@ -328,10 +343,10 @@ NIL
 1
 
 BUTTON
-115
-140
-190
-173
+205
+120
+280
+153
 go
 go
 T
@@ -345,10 +360,10 @@ NIL
 0
 
 PLOT
-10
-360
-350
-530
+970
+190
+1445
+555
 populations
 time
 pop.
@@ -365,10 +380,10 @@ PENS
 "grass / 4" 1.0 0 -10899396 true "" "plot count grass / 4"
 
 MONITOR
-41
-308
-111
-353
+1000
+130
+1110
+175
 sheep
 count sheep
 3
@@ -376,10 +391,10 @@ count sheep
 11
 
 MONITOR
-115
-308
-185
-353
+1130
+130
+1245
+175
 wolves
 count wolves
 3
@@ -387,10 +402,10 @@ count wolves
 11
 
 MONITOR
-191
-308
-256
-353
+1260
+130
+1385
+175
 grass
 count grass / 4
 0
@@ -398,50 +413,85 @@ count grass / 4
 11
 
 TEXTBOX
-20
-178
-160
-196
+30
+165
+170
+183
 Sheep settings
 11
 0.0
 0
 
 TEXTBOX
-198
-176
-311
-194
+210
+165
+323
+183
 Wolf settings
 11
 0.0
 0
 
 SWITCH
-105
-270
-241
-303
+145
+340
+281
+373
 show-energy?
 show-energy?
-1
+0
 1
 -1000
 
 SLIDER
-185
-110
-357
-143
+210
+290
+370
+323
 grass-reproduce
 grass-reproduce
 0
 100
-1.0
+3.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+105
+75
+312
+108
+initial-number-green-patches
+initial-number-green-patches
+0
+2500
+977.0
 1
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+30
+270
+180
+288
+Grass settings
+12
+0.0
+1
+
+TEXTBOX
+30
+15
+180
+33
+Initial settings
+12
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
