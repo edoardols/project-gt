@@ -6,7 +6,7 @@ breed [ wolves wolf ]
 
 turtles-own [ energy ]       ; both wolves and sheep have energy
 
-patches-own [ sunlight-water-level grass-energy grass-growth-rate ]    ; this is for the sheep-wolves-grass model version
+patches-own [ countdown sunlight-water-level grass-energy ]    ; this is for the sheep-wolves-grass model version
 
 to setup
   clear-all
@@ -18,8 +18,8 @@ to setup
   ask patches [
     ;set pcolor one-of [ green brown ]
     ;set n-of initial-number-grass patches green
-    if pcolor = green [ set grass-energy random (2 * grass-gain-from-sun-water)  ]
-    if pcolor = brown [ set grass-energy 0]
+    if pcolor = green [ set grass-energy random (2 * grass-gain-from-sun-water) set countdown grass-regrowth-time ]
+    if pcolor = brown [ set grass-energy 0 set countdown random grass-regrowth-time ]
   ]
 
   create-sheep initial-number-sheep  ; create the sheep, then initialize their variables
@@ -40,8 +40,10 @@ to setup
     set energy random (2 * wolf-gain-from-food)
     setxy random-xcor random-ycor
   ]
+
   display-turtles-labels
   display-patches-labels
+
   reset-ticks
 end
 
@@ -59,15 +61,15 @@ end
 
 to go
   ; stop the model if there are no wolves and no sheep
-  if not any? turtles [ user-message "Only the grass survived" stop ]
+  if not any? turtles and not any? patches with [pcolor = green] [ user-message "Only the grass survived" stop ]
   ; stop the model if there are no wolves and the number of sheep gets very large
-  if not any? wolves and count sheep > 0 [ user-message "Only the sheep and the grass survived" stop ]
-  if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited" stop ]
-  if not any? sheep and count wolves > max-wolves [ user-message "The wolves have inherited" stop ]
-  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves > max-wolves [ user-message "Only the wolves survived" stop ]
+  ;if not any? wolves and count sheep > 0 [ user-message "Only the sheep and the grass survived" stop ]
+  ;if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited" stop ]
+  ;if not any? sheep and count wolves > max-wolves [ user-message "The wolves have inherited" stop ]
+  ;if not any? patches with [pcolor = green] and count sheep = 0 and count wolves > max-wolves [ user-message "Only the wolves survived" stop ]
   ;if not any? patches with [pcolor = green] and count sheep > 0 and count wolves > 0 [ user-message "Only the wolves and the sheep survived" stop ]
-  if not any? sheep and count wolves > max-wolves [ user-message "Only the wolves and the grass survived" stop ]
-  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves = 0 [ user-message "Neither the wolves nor the sheep nor the grass survived" stop ]
+  ;if not any? sheep and count wolves > max-wolves [ user-message "Only the wolves and the grass survived" stop ]
+  ;if not any? patches with [pcolor = green] and count sheep = 0 and count wolves = 0 [ user-message "Neither the wolves nor the sheep nor the grass survived" stop ]
 
   ask sheep [
     move
@@ -79,21 +81,23 @@ to go
 
   ask wolves [
     move
-    set energy energy - 1
+    set energy energy - 0.5
     eat-sheep
     death
     reproduce-wolves
   ]
 
   ask patches with [ pcolor = green ] [
-    set sunlight-water-level ( sin ticks + 1 )
-    set grass-energy (grass-energy - 2)
+    ;set sunlight-water-level (sin ticks + 1)
+    set sunlight-water-level random 5
+    set grass-energy (grass-energy - 1)
     grow-grass
     grass-death
     reproduce-grass
   ]
 
   tick
+
   display-turtles-labels
   display-patches-labels
 end
@@ -109,10 +113,12 @@ to eat-grass  ; sheep procedure
   let resource patch-here
 
   if pcolor = green [
-    set energy energy + sheep-gain-from-food  ; sheep gain energy by eating
-    ask resource [
-      set pcolor brown
-      set grass-energy 0
+    if random-float 100 < sheep-eat [
+      set energy energy + sheep-gain-from-food  ; sheep gain energy by eating
+      ask resource [
+        set pcolor brown
+        set grass-energy 0
+      ]
     ]
   ]
 
@@ -120,64 +126,64 @@ end
 
 to reproduce-sheep  ; sheep procedure
   if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
-    if any? other sheep-here [
-      let my-friend one-of other sheep-here
-      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
+    if any? other sheep in-radius 1 [
+      let my-partner one-of other sheep in-radius 3
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-partner) / 2 ]
+
+      set energy (energy / 2)
+      ask my-partner [ set energy  (energy / 2) ]
     ]
   ]
-
-
-  ;if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
-    ;set energy (energy / 2)                ; divide energy between parent and offspring
-    ;hatch 1 [ rt random-float 360 fd 1 ]   ; hatch an offspring and move it forward 1 step
-  ;]
 end
 
 to reproduce-wolves  ; wolf procedure
   if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
-    if any? other wolves-here [
-      let my-friend one-of other wolves-here
-      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
+    if any? other wolves in-radius 1 [
+      let my-partner one-of other wolves in-radius 3
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-partner) / 2 ]
+
+      set energy (energy / 2)
+      ask my-partner [ set energy  (energy / 2) ]
+
     ]
   ]
-
-  ;if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
-   ; set energy (energy / 2)               ; divide energy between parent and offspring
-    ;hatch 1 [ rt random-float 360 fd 1 ]  ; hatch an offspring and move it forward 1 step
-  ;]
 end
 
 to reproduce-grass
-  if random-float 100 < grass-reproduce [
-    if count neighbors with [ pcolor = brown ] > 0 [
-      hatch-grass
+  ifelse countdown <= 0 [
+    if random-float 100 < grass-reproduce [
+      if count patches in-radius 2 with [ pcolor = brown ] > 0 [
+        hatch-grass
+      ]
     ]
+    set countdown grass-regrowth-time
   ]
-
+  [
+    set countdown countdown - 1
+  ]
 end
 
 to hatch-grass
     let parent-energy grass-energy
     let reproduce? false
-    ask patches in-radius 3 with [ pcolor = brown ][
+    ask patches in-radius 1 with [ pcolor = brown ][
       set pcolor green
-      set grass-energy (parent-energy / 2)
+      set grass-energy (parent-energy / 4)
       set reproduce? true
     ]
 
     if reproduce? [
-      set grass-energy (grass-energy / 2)
+      set grass-energy (grass-energy / 4)
     ]
-
 end
 
-
-
 to eat-sheep  ; wolf procedure
-  let prey one-of sheep-here                    ; grab a random sheep
-  if prey != nobody  [                          ; did we get one? if so,
-    ask prey [ die ]                            ; kill it, and...
-    set energy energy + wolf-gain-from-food     ; get energy from eating
+  if random-float 100 < wolves-eat [
+    let prey one-of sheep in-radius 1                   ; grab a random sheep
+    if prey != nobody  [                          ; did we get one? if so,
+      ask prey [ die ]                            ; kill it, and...
+      set energy energy + wolf-gain-from-food     ; get energy from eating
+    ]
   ]
 end
 
@@ -187,9 +193,7 @@ to death  ; turtle procedure (i.e. both wolf and sheep procedure)
 end
 
 to grow-grass  ; patch procedure
-
   set grass-energy grass-energy + (grass-gain-from-sun-water * sunlight-water-level)
-
 end
 
 
@@ -199,9 +203,7 @@ to grass-death  ; turtle procedure (i.e. both wolf and sheep procedure)
 end
 
 to-report grass
-
   report patches with [pcolor = green]
-
 end
 
 
@@ -259,7 +261,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-193.0
+250.0
 1
 1
 NIL
@@ -274,7 +276,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0.0
 50.0
-36.0
+35.0
 1.0
 1
 NIL
@@ -289,7 +291,7 @@ sheep-reproduce
 sheep-reproduce
 1.0
 20.0
-8.0
+12.0
 1.0
 1
 %
@@ -304,7 +306,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-133.0
+132.0
 1
 1
 NIL
@@ -319,7 +321,7 @@ wolf-gain-from-food
 wolf-gain-from-food
 0.0
 100.0
-17.0
+58.0
 1.0
 1
 NIL
@@ -334,7 +336,7 @@ wolf-reproduce
 wolf-reproduce
 0.0
 20.0
-4.0
+11.0
 1.0
 1
 %
@@ -349,7 +351,7 @@ grass-gain-from-sun-water
 grass-gain-from-sun-water
 0
 100
-59.0
+53.0
 1
 1
 NIL
@@ -464,9 +466,9 @@ Wolf settings
 
 SWITCH
 25
-355
+475
 200
-388
+508
 show-turtles-energy?
 show-turtles-energy?
 1
@@ -482,7 +484,7 @@ grass-reproduce
 grass-reproduce
 0
 100
-11.0
+57.0
 1
 1
 %
@@ -497,7 +499,7 @@ initial-number-green-patches
 initial-number-green-patches
 0
 2500
-762.0
+1914.0
 1
 1
 NIL
@@ -525,21 +527,76 @@ Initial settings
 
 SWITCH
 205
-355
+475
 370
-388
+508
 show-patches-energy?
 show-patches-energy?
-1
+0
 1
 -1000
 
 TEXTBOX
 30
-330
+450
 180
-348
+468
 Show energy?
+12
+0.0
+1
+
+SLIDER
+25
+405
+197
+438
+wolves-eat
+wolves-eat
+0
+100
+71.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+25
+335
+197
+368
+grass-regrowth-time
+grass-regrowth-time
+0
+100
+76.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+200
+405
+372
+438
+sheep-eat
+sheep-eat
+0
+100
+71.0
+1
+1
+%
+HORIZONTAL
+
+TEXTBOX
+30
+385
+180
+403
+Probability to eat
 12
 0.0
 1
