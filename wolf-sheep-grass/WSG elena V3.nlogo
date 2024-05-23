@@ -1,25 +1,25 @@
-globals [ max-sheep max-wolves ]  ; don't let the sheep and the wolves population grow too large
+globals [ max-sheep max-wolves ]  ; don't let the sheep population grow too large
 
 ; Sheep and wolves are both breeds of turtles
 breed [ sheep a-sheep ]  ; sheep is its own plural, so we use "a-sheep" as the singular
-breed [ wolves wolf ]  ; wolves is its own plural, so we use wolf as the singular
+breed [ wolves wolf ]
 
-turtles-own [ energy ] ; both wolves and sheep have energy
+turtles-own [ energy ]       ; both wolves and sheep have energy
 
-; One patch is a unit of grass
-patches-own [ countdown sunligth-level water-level ] ; each unit of grass has its own countdown for the regrowth and the death and its own level of sunlight and of water
+patches-own [ sunlight-water-level grass-energy grass-growth-rate ]    ; this is for the sheep-wolves-grass model version
 
 to setup
-
   clear-all
   ifelse netlogo-web? [ set max-sheep 1000 ] [ set max-sheep 3000 ]
-  ifelse netlogo-web? [ set max-wolves 500 ] [ set max-wolves 1000 ]
+  ifelse netlogo-web? [ set max-wolves 1000 ] [ set max-wolves 3000 ]
 
-  set-initial-number-green-patches ; set the initial number of green patches
+  color-patches
 
   ask patches [
-    if pcolor = green [ set countdown grass-death-time] ; the grass-death-time (slider in the interface) is the time one green patch takes to die, to become brown
-    if pcolor = brown [ set countdown grass-regrowth-time] ; the grass-regrowth-time (slider in the interface) is the time one brown patch takes to regrow, to become green
+    ;set pcolor one-of [ green brown ]
+    ;set n-of initial-number-grass patches green
+    if pcolor = green [ set grass-energy random (2 * grass-gain-from-sun-water)  ]
+    if pcolor = brown [ set grass-energy 0]
   ]
 
   create-sheep initial-number-sheep  ; create the sheep, then initialize their variables
@@ -40,239 +40,162 @@ to setup
     set energy random (2 * wolf-gain-from-food)
     setxy random-xcor random-ycor
   ]
-
   display-turtles-labels
-
+  display-patches-labels
   reset-ticks
-
 end
 
-to set-initial-number-green-patches ; initial color patch procedure
-
-  let num-patches initial-number-green-patches
+to color-patches
+  let num-to-color initial-number-green-patches
   let colored-patches 0
 
   ask patches [
-    ifelse colored-patches < num-patches [
+    ifelse colored-patches < num-to-color [
       set pcolor green
       set colored-patches colored-patches + 1
     ] [set pcolor brown]
   ]
-
 end
 
 to go
   ; stop the model if there are no wolves and no sheep
   if not any? turtles [ user-message "Only the grass survived" stop ]
+  ; stop the model if there are no wolves and the number of sheep gets very large
+  if not any? wolves and count sheep > 0 [ user-message "Only the sheep and the grass survived" stop ]
+  if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited" stop ]
+  if not any? sheep and count wolves > max-wolves [ user-message "The wolves have inherited" stop ]
+  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves > max-wolves [ user-message "Only the wolves survived" stop ]
+  ;if not any? patches with [pcolor = green] and count sheep > 0 and count wolves > 0 [ user-message "Only the wolves and the sheep survived" stop ]
+  if not any? sheep and count wolves > max-wolves [ user-message "Only the wolves and the grass survived" stop ]
+  if not any? patches with [pcolor = green] and count sheep = 0 and count wolves = 0 [ user-message "Neither the wolves nor the sheep nor the grass survived" stop ]
 
   ask sheep [
     move
     set energy energy - 1
-
     eat-grass
     death
     reproduce-sheep
-    escape-from-wolves
-
   ]
 
   ask wolves [
     move
     set energy energy - 1
-
     eat-sheep
     death
     reproduce-wolves
-    follow-sheep
   ]
 
-  ask patches [
-
-    let s (ticks * 360 / sunligth-level-variation) ; Convert tick to degrees
-    let w (ticks * 360 / water-level-variation) ; Convert tick to degrees
-
-    set sunligth-level sin (s) ; set the variation of the sunligth level
-    set water-level sin (w) ; set the variation of the water level
-
+  ask patches with [ pcolor = green ] [
+    set sunlight-water-level ( sin ticks + 1 )
+    set grass-energy (grass-energy - 2)
     grow-grass
-    if pcolor = green [reproduce-grass]
-
+    grass-death
+    reproduce-grass
   ]
 
   tick
-
   display-turtles-labels
-
+  display-patches-labels
 end
 
 to move  ; turtle procedure
-
   rt random 50
   lt random 50
   fd 1
-
 end
 
 to eat-grass  ; sheep procedure
-
   ; sheep eat grass and turn the patch brown
   let resource patch-here
 
   if pcolor = green [
-    if random-float 100 < sheep-eat [ ; throw "dice" to see if you will eat
-      set energy energy + sheep-gain-from-food  ; sheep gain energy by eating
-      ask resource [
-        set pcolor brown
-        set countdown grass-regrowth-time
-      ]
+    set energy energy + sheep-gain-from-food  ; sheep gain energy by eating
+    ask resource [
+      set pcolor brown
+      set grass-energy 0
     ]
   ]
-
-end
-
-to death  ; turtle procedure (i.e. both wolf and sheep procedure)
-
-  ; when energy dips below zero, die
-  if energy < 0 [ die ]
 
 end
 
 to reproduce-sheep  ; sheep procedure
-
-  if count sheep < max-sheep [ ; sheep will reproduce only if the number of sheep is less than the maximum one
-    if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
-      if any? other sheep in-radius 2 [
-        let my-partner one-of other sheep in-radius 2
-        hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-partner) / 2 ]
-
-        set energy (energy / 2)
-        ask my-partner [ set energy  (energy / 2) ]
-      ]
+  if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
+    if any? other sheep-here [
+      let my-friend one-of other sheep-here
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
     ]
   ]
 
+
+  ;if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
+    ;set energy (energy / 2)                ; divide energy between parent and offspring
+    ;hatch 1 [ rt random-float 360 fd 1 ]   ; hatch an offspring and move it forward 1 step
+  ;]
 end
 
 to reproduce-wolves  ; wolf procedure
-
-  if count wolves < max-wolves [ ; wolves will reproduce only if the number of wolves is less than the maximum one
-    if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
-      if any? other wolves in-radius 3 [
-        let my-partner one-of other wolves in-radius 3
-        hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-partner) / 2 ]
-
-        set energy (energy / 2)
-        ask my-partner [ set energy  (energy / 2) ]
-
-      ]
+  if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
+    if any? other wolves-here [
+      let my-friend one-of other wolves-here
+      hatch 1 [rt random-float 360 fd 1 set energy ([energy] of myself + [energy] of my-friend) / 2 ]
     ]
   ]
 
+  ;if random-float 100 < wolf-reproduce [  ; throw "dice" to see if you will reproduce
+   ; set energy (energy / 2)               ; divide energy between parent and offspring
+    ;hatch 1 [ rt random-float 360 fd 1 ]  ; hatch an offspring and move it forward 1 step
+  ;]
 end
 
-
-to escape-from-wolves ; sheep procedure
-
-  ; sheep can escape from wolves that are closer than 2
-  if any? wolves in-radius 2 [
-    face one-of wolves in-radius 2
-    rt 180 + random 90 - random 90
-    fd 1.5
-  ]
-
-end
-
-to follow-sheep ; wolves procedure
-
-  ; wolves can follow sheep that are closer than 3
-  if any? sheep in-radius 3 [
-    face one-of sheep in-radius 3
-    fd 2
-  ]
-
-end
-
-to eat-sheep  ; wolf procedure
-
-  if random-float 100 < wolves-eat [ ; throw "dice" to see if you will eat
-    let prey one-of sheep in-radius 3                   ; grab a random sheep
-    if prey != nobody  [                          ; did we get one? if so,
-      ask prey [ die ]                            ; kill it, and...
-      set energy energy + wolf-gain-from-food     ; get energy from eating
-    ]
-  ]
-
-end
-
-to grow-grass  ; patch procedure
-
-  if sunligth-level > 0 and water-level > 0 [
-
-    if pcolor = brown [
-      if countdown <= 0
-      [ set pcolor green
-        set countdown grass-regrowth-time ]
-    ]
-
-    if pcolor = green [
-      if countdown <= 0
-      [ set pcolor brown
-        set countdown grass-death-time ]
-    ]
-  ]
-
-  if (sunligth-level > 0 and water-level < 0) or (sunligth-level < 0 and water-level > 0) [
-
-    if pcolor = brown [
-      ifelse countdown <= 0
-      [ set pcolor green
-        set countdown grass-regrowth-time ]
-      [ set countdown countdown - 0.5 ]
-    ]
-
-    if pcolor = green [
-      ifelse countdown <= 0
-      [ set pcolor brown
-        set countdown grass-death-time ]
-      [ set countdown countdown - 0.5 ]
-    ]
-  ]
-
-  if (sunligth-level < 0 and water-level < 0) [
-
-    if pcolor = brown [
-      ifelse countdown <= 0
-      [ set pcolor green
-        set countdown grass-regrowth-time ]
-      [ set countdown countdown - 1 ]
-    ]
-
-    if pcolor = green [
-      ifelse countdown <= 0
-      [ set pcolor brown
-        set countdown grass-death-time ]
-      [ set countdown countdown - 1 ]
-    ]
-  ]
-
-end
-
-to reproduce-grass ; patch procedure
-
-    ; if a brown patch has some green patches that are closer than 1, it can become green
-    if count patches in-radius 2 with [ pcolor = brown ] > 5 [
+to reproduce-grass
+  if random-float 100 < grass-reproduce [
+    if count neighbors with [ pcolor = brown ] > 0 [
       hatch-grass
     ]
+  ]
 
 end
 
 to hatch-grass
+    let parent-energy grass-energy
+    let reproduce? false
+    ask patches in-radius 3 with [ pcolor = brown ][
+      set pcolor green
+      set grass-energy (parent-energy / 2)
+      set reproduce? true
+    ]
 
-  ask patches in-radius 2 with [ pcolor = brown ] [
-    set pcolor green
-    set countdown grass-death-time
+    if reproduce? [
+      set grass-energy (grass-energy / 2)
+    ]
+
+end
+
+
+
+to eat-sheep  ; wolf procedure
+  let prey one-of sheep-here                    ; grab a random sheep
+  if prey != nobody  [                          ; did we get one? if so,
+    ask prey [ die ]                            ; kill it, and...
+    set energy energy + wolf-gain-from-food     ; get energy from eating
   ]
+end
 
+to death  ; turtle procedure (i.e. both wolf and sheep procedure)
+  ; when energy dips below zero, die
+  if energy < 0 [ die ]
+end
+
+to grow-grass  ; patch procedure
+
+  set grass-energy grass-energy + (grass-gain-from-sun-water * sunlight-water-level)
+
+end
+
+
+to grass-death  ; turtle procedure (i.e. both wolf and sheep procedure)
+  ; when energy dips below zero, die
+  if grass-energy < 0 [ set pcolor brown set grass-energy 0]
 end
 
 to-report grass
@@ -283,23 +206,27 @@ end
 
 
 to display-turtles-labels
-
   ask turtles [ set label "" ]
   if show-turtles-energy? [
     ask wolves [ set label round energy ]
     ask sheep [ set label round energy ]
   ]
-
 end
 
+to display-patches-labels
+  ask patches [ set plabel "" ]
+  if show-patches-energy? [
+    ask patches [ set plabel round grass-energy set plabel-color black ]
+  ]
+end
 
 ; Copyright 1997 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-380
+385
 15
-949
+954
 585
 -1
 -1
@@ -332,7 +259,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-170.0
+193.0
 1
 1
 NIL
@@ -347,7 +274,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0.0
 50.0
-34.0
+36.0
 1.0
 1
 NIL
@@ -362,7 +289,7 @@ sheep-reproduce
 sheep-reproduce
 1.0
 20.0
-13.0
+8.0
 1.0
 1
 %
@@ -377,7 +304,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-65.0
+133.0
 1
 1
 NIL
@@ -392,7 +319,7 @@ wolf-gain-from-food
 wolf-gain-from-food
 0.0
 100.0
-11.0
+17.0
 1.0
 1
 NIL
@@ -411,6 +338,21 @@ wolf-reproduce
 1.0
 1
 %
+HORIZONTAL
+
+SLIDER
+25
+290
+200
+323
+grass-gain-from-sun-water
+grass-gain-from-sun-water
+0
+100
+59.0
+1
+1
+NIL
 HORIZONTAL
 
 BUTTON
@@ -448,10 +390,10 @@ NIL
 0
 
 PLOT
-985
-65
-1460
-430
+970
+190
+1445
+555
 populations
 time
 pop.
@@ -463,15 +405,15 @@ true
 true
 "" ""
 PENS
-"sheep" 1.0 0 -6459832 true "" "plot count sheep"
+"sheep" 1.0 0 -612749 true "" "plot count sheep"
 "wolves" 1.0 0 -16449023 true "" "plot count wolves"
 "grass / 4" 1.0 0 -10899396 true "" "plot count grass / 4"
 
 MONITOR
-1015
-15
-1125
-60
+1000
+130
+1110
+175
 sheep
 count sheep
 3
@@ -479,10 +421,10 @@ count sheep
 11
 
 MONITOR
-1145
-15
-1260
-60
+1130
+130
+1245
+175
 wolves
 count wolves
 3
@@ -490,10 +432,10 @@ count wolves
 11
 
 MONITOR
-1275
-15
-1400
-60
+1260
+130
+1385
+175
 grass
 count grass / 4
 0
@@ -522,9 +464,9 @@ Wolf settings
 
 SWITCH
 25
-550
+355
 200
-583
+388
 show-turtles-energy?
 show-turtles-energy?
 1
@@ -532,15 +474,30 @@ show-turtles-energy?
 -1000
 
 SLIDER
+205
+290
+370
+323
+grass-reproduce
+grass-reproduce
+0
 100
+11.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+105
 75
-307
+312
 108
 initial-number-green-patches
 initial-number-green-patches
 0
-2601
-1748.0
+2500
+762.0
 1
 1
 NIL
@@ -566,144 +523,26 @@ Initial settings
 0.0
 1
 
-TEXTBOX
-30
-525
-180
-543
-Show turtles energy?
-12
-0.0
-1
-
-SLIDER
-25
-355
-197
-388
-wolves-eat
-wolves-eat
-0
-100
-20.0
-1
-1
-%
-HORIZONTAL
-
-SLIDER
-25
-290
-200
-323
-grass-death-time
-grass-death-time
-0
-100
-25.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-200
-355
-372
-388
-sheep-eat
-sheep-eat
-0
-100
-26.0
-1
-1
-%
-HORIZONTAL
-
-TEXTBOX
-30
-335
-250
-361
-Probability to eat for wolves and sheep
-12
-0.0
-1
-
-SLIDER
+SWITCH
 205
-290
+355
 370
-323
-grass-regrowth-time
-grass-regrowth-time
-0
-100
-26.0
+388
+show-patches-energy?
+show-patches-energy?
 1
 1
-NIL
-HORIZONTAL
-
-PLOT
-985
-435
-1460
-620
-Sunlight-Water
-time
-sunlight-water
-0.0
-100.0
--1.0
-1.0
-true
-true
-"" ""
-PENS
-"sunlight-level" 1.0 0 -1184463 true "" "plot sin (ticks *  360 / sunligth-level-variation)"
-"water-level" 1.0 0 -13791810 true "" "plot sin (ticks *  360 / water-level-variation)"
+-1000
 
 TEXTBOX
 30
-400
-205
-426
-Sunligth-Water levels settings
+330
+180
+348
+Show energy?
 12
 0.0
 1
-
-SLIDER
-25
-420
-197
-453
-sunligth-level-variation
-sunligth-level-variation
-0
-100
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-200
-420
-372
-453
-water-level-variation
-water-level-variation
-0
-100
-10.0
-1
-1
-NIL
-HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1463,75 +1302,6 @@ setup</setup>
         <value value="30"/>
       </enumeratedValueSet>
     </subExperiment>
-  </experiment>
-  <experiment name="experiment 1" repetitions="1" runMetricsEveryStep="true">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="10"/>
-    <metric>count wolves</metric>
-    <metric>count sheep</metric>
-    <metric>count grass</metric>
-    <enumeratedValueSet variable="initial-number-green-patches">
-      <value value="1000"/>
-      <value value="800"/>
-      <value value="2001"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-gain-from-food">
-      <value value="10"/>
-      <value value="25"/>
-      <value value="80"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-eat">
-      <value value="25"/>
-      <value value="10"/>
-      <value value="80"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce">
-      <value value="3"/>
-      <value value="5"/>
-      <value value="20"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="initial-number-wolves">
-      <value value="100"/>
-      <value value="25"/>
-      <value value="250"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-eat">
-      <value value="25"/>
-      <value value="10"/>
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="show-patches-energy?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="initial-number-sheep">
-      <value value="100"/>
-      <value value="25"/>
-      <value value="250"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="grass-reproduce">
-      <value value="25"/>
-      <value value="10"/>
-      <value value="50"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-gain-from-food">
-      <value value="10"/>
-      <value value="10"/>
-      <value value="50"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="grass-gain-from-sun-water">
-      <value value="10"/>
-      <value value="10"/>
-      <value value="50"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="show-turtles-energy?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce">
-      <value value="3"/>
-      <value value="5"/>
-      <value value="15"/>
-    </enumeratedValueSet>
   </experiment>
 </experiments>
 @#$#@#$#@
