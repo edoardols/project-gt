@@ -1,13 +1,13 @@
-globals [r1 a11 a12 a13 r2 a21 a22 a23 r3 a31 a32 a33 array]
+globals [ r1 a11 a12 a13 r2 a21 a22 a23 r3 a31 a32 a33 array g-energy s-energy w-energy]
 
 ; Sheep and wolves are both breeds of turtles
 breed [ sheep a-sheep ]
 breed [ wolves wolf   ]
 breed [ grasses grass ]
 
-turtles-own []
+turtles-own [ energy ]
 
-patches-own []
+patches-own [ p-energy ]
 
 to setup
   clear-all
@@ -38,16 +38,21 @@ to setup
 
   ; create the grasses, then initialize their variables
   ask patches [ set pcolor brown ]
-  ask n-of initial-number-grasses patches [ set pcolor green ]
+  ask n-of initial-number-grasses patches [
+    set pcolor green
+    set p-energy 0
+  ]
 
 
   ; create the sheep, then initialize their variables
   create-sheep initial-number-sheep
   [
-    set shape  "sheep"
+    set shape "sheep"
     set color white
     set size 1.5
     setxy random-xcor random-ycor
+
+    set energy 0
   ]
 
   ; create the wolves, then initialize their variables
@@ -57,55 +62,72 @@ to setup
     set color black
     set size 2
     setxy random-xcor random-ycor
+
+    set energy 0
   ]
+
+  set g-energy 0
+  set s-energy 0
+  set w-energy 0
 
   reset-ticks
 end
 
 to go
+  set g-energy 0
+  set s-energy 0
+  set w-energy 0
 
   ask patches [
     ; r1 = regrowth
-    if ( random-float 1 < (abs  r1) ) and ( pcolor = brown ) [set pcolor green]
+    set p-energy ( p-energy + r1 )
 
     ; a11 = self limitation
-    if ( random-float 1 < (abs a11) ) and ( pcolor = green ) and ( any? neighbors with [pcolor = green] ) [set pcolor brown]
+    set p-energy ( p-energy + (a11 * count grasses) )
 
     ; a12 = predation mechanism from sheep over grasses
-    if ( random-float 1 < (abs a12) ) and ( pcolor = green ) and ( any? sheep-here ) [set pcolor brown]
+    set p-energy ( p-energy + (a12 * count sheep) )
 
     ; a13 = interaction between grasses and wolves
-    if ( random-float 1 < (abs a13) ) and ( pcolor = brown ) and ( any? wolves-here ) [set pcolor green]
+    set p-energy ( p-energy + (a13 * count wolves) )
+
+    ifelse p-energy > 0 [set pcolor green] [set pcolor brown]
+
+    set g-energy ( g-energy + p-energy )
   ]
 
   ask sheep [
     move
     ; r2 = natural death
-    if ( random-float 1 < (abs  r2) ) [die]
+    set energy ( energy + r2 )
 
     ; a21 = reproduction chance (predation mechanism from sheep over grasses)
-    if ( random-float 1 < (abs a21) ) and ( any? sheep-here ) and ( [pcolor] of patch-here = green ) [ hatch 1 [ rt random-float 360 fd 1 ] ]
+    set energy ( energy + (a21 * count grasses))
 
     ; a22 = self limitation
-    if ( random-float 1 < (abs a22) ) and ( any? sheep-here ) [die]
+    set energy ( energy + (a22 * count sheep))
 
     ; a23 = death (predation mechanism from wolves over sheep)
-    if ( random-float 1 < (abs a23) ) and ( any? wolves-here ) [die]
+    set energy ( energy + (a23 * count wolves))
+
+    set s-energy ( s-energy + energy )
   ]
 
   ask wolves [
     move
     ; r3 = natural death
-    if ( random-float 1 < (abs  r3) ) [die]
+    set energy ( energy + r3 )
 
     ; a31 = interaction between wolves and grasses
-    if ( random-float 1 < (abs a31) ) and ( [pcolor] of patch-here = green ) [die]
+    set energy ( energy + (a31 * count grasses))
 
     ; a32 = reproduction chance (predation mechanism from wolves over sheep)
-    if ( random-float 1 < (abs a32) ) and ( any? sheep-here ) and (any? wolves-here) [ hatch 1 [ rt random-float 360 fd 1 ] ]
+    set energy ( energy + (a32 * count sheep))
 
     ; a33 = self limitation
-    if ( random-float 1 < (abs a33) ) and ( any? wolves-here ) [die]
+    set energy ( energy + (a33 * count wolves))
+
+    set w-energy ( w-energy + energy )
   ]
 
   tick
@@ -184,7 +206,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-100.0
+45.0
 1
 1
 NIL
@@ -199,7 +221,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-106.0
+42.0
 1
 1
 NIL
@@ -214,7 +236,7 @@ initial-number-grasses
 initial-number-grasses
 0
 (max-pxcor - min-pxcor + 1)*(max-pycor - min-pycor + 1)
-1109.0
+456.0
 1
 1
 NIL
@@ -270,9 +292,9 @@ true
 true
 "" ""
 PENS
-"sheep" 1.0 0 -612749 true "" "plot count sheep"
-"wolves" 1.0 0 -16449023 true "" "plot count wolves"
-"grass" 1.0 0 -10899396 true "" "plot (count (patches with [pcolor = green]))"
+"sheep" 1.0 0 -612749 true "" "plot s-energy"
+"wolves" 1.0 0 -16449023 true "" "plot w-energy"
+"grass" 1.0 0 -10899396 true "" "plot g-energy"
 
 MONITOR
 41
@@ -280,7 +302,7 @@ MONITOR
 111
 353
 sheep
-count sheep
+s-energy
 3
 1
 11
@@ -291,7 +313,7 @@ MONITOR
 185
 353
 wolves
-count wolves
+w-energy
 3
 1
 11
@@ -302,7 +324,7 @@ MONITOR
 256
 353
 grass
-count (patches with [pcolor = green])
+g-energy
 0
 1
 11
