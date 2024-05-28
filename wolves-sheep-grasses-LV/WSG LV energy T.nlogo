@@ -18,7 +18,7 @@ to setup
   set reproduce-radius 1
 
   set walk 1
-  set sprint 2
+  set sprint 1.5
 
   ask patches [
     set pcolor green + 2
@@ -65,7 +65,13 @@ to go
   if count sheep >= max-sheep or count plants >= max-plants or count wolves >= max-wolves [ ; user-message "The eco-system didn't survive."
     stop ]
 
-  ask patches with [ not any? plants-here ] [
+;; to impose at the plants to grown only if the patch is free
+;  ask patches with [ not any? plants-here ] [
+;    set countdown countdown - 1
+;    reproduce-plants
+;  ]
+
+   ask patches [
     set countdown countdown - 1
     reproduce-plants
   ]
@@ -81,7 +87,7 @@ to go
   ask sheep [
     move
     self-interaction
-    if model-chosen = "hunt" [
+    if model-chosen = "hunt-flee" [
       hunt-plants
       flee
     ]
@@ -94,7 +100,7 @@ to go
   ask wolves [
     move
     self-interaction
-    if model-chosen = "hunt" [ hunt-sheep ]
+    if model-chosen = "hunt-flee" [ hunt-sheep ]
     same-species-interaction
     different-species-interaction
     reproduce-wolves
@@ -206,66 +212,23 @@ end
 
 to reproduce-plants
 
-;  ;; plants auto reproduction
+;  ;; plants reproduction without parents but one on each free patch
 ;  if count plants < max-plants [
-;    if random-float 1 < reproduce-chance [
-;      hatch 1 [
-;        set shape "plant"
-;        set color green - 2
-;        set size 1
-;        set energy random 100
-;        setxy random-xcor random-ycor
-;      ]
-;      set energy energy / 2
-;    ]
-;  ]
-
-;  ;; plants reproduction with parents
-;  if count plants < max-plants [
-;    let my-partner one-of other plants in-radius reproduce-radius
-;    if my-partner != nobody and random-float 1 < reproduce-chance [
-;      let energy-father energy / 2
-;      let energy-mother [energy] of my-partner / 2
-;      hatch 1 [
-;        set shape "plant"
-;        set color green - 2
-;        set size 1
-;        set energy random 100
-;        ; set energy (energy-father + energy-mother)
-;        ; setxy xcor + random 2 - 1 ycor + random 2 - 1
-;        setxy random-xcor random-ycor
-;      ]
-;      set energy (energy - energy-father)
-;      ask my-partner [ set energy  (energy - energy-mother) ]
-;    ]
-;  ]
-
-;  ;; plants reproduction with parents but one on each free patch
-;  if count plants < max-plants [
-;    let my-partner one-of other plants in-radius reproduce-radius
-;    if my-partner != nobody and random-float 1 < reproduce-chance [
-;      let energy-father energy / 2
-;      let energy-mother [energy] of my-partner / 2
-;      let free-space one-of patches with [ not any? plants-here ]
-;      if free-space != nobody [
-;        ask free-space [
-;          sprout-plants 1 [
-;            set shape "plant"
-;            set color green - 2
-;            set size 1
-;            set energy random 100
-;            setxy xcor ycor
-;          ]
+;    if not any? plants-here and countdown <= 0 [
+;        sprout-plants 1 [
+;          set shape "plant"
+;          set color green - 2
+;          set size 1
+;          set energy random 100
+;          setxy xcor ycor
+;          set countdown countdown-regrowth
 ;        ]
-;      ]
-;      set energy (energy - energy-father)
-;      ask my-partner [ set energy  (energy - energy-mother) ]
-;    ]
+;     ]
 ;  ]
 
-  ;; plants reproduction without parents but one on each free patch
+  ;; plants reproduction without parents
   if count plants < max-plants [
-    if not any? plants-here and countdown <= 0 [
+    if countdown <= 0 [
         sprout-plants 1 [
           set shape "plant"
           set color green - 2
@@ -274,8 +237,7 @@ to reproduce-plants
           setxy xcor ycor
           set countdown countdown-regrowth
         ]
-      ]
-
+     ]
   ]
 
 end
@@ -450,7 +412,7 @@ end
 ;; functions for the hunting and flee mechanism
 to  hunt-plants
 
-  let target-plant min-one-of plants in-radius 5 [distance myself]
+  let target-plant min-one-of plants in-radius 3 [distance myself]
   ifelse target-plant != nobody [
     face target-plant
     fd walk
@@ -460,7 +422,7 @@ end
 
 to hunt-sheep
 
-  let target-sheep min-one-of sheep in-radius (5 + 0) [distance myself]
+  let target-sheep min-one-of sheep in-radius (3 + 0) [distance myself]
   ifelse target-sheep != nobody [
     face target-sheep
     fd sprint
@@ -718,8 +680,8 @@ CHOOSER
 475
 168
 520
-Model-chosen
-Model-chosen
+model-chosen
+model-chosen
 "classic" "hunt-flee"
 0
 
