@@ -1,12 +1,12 @@
-globals [ max-plants max-sheep max-wolves reproduce-radius walk sprint]  ; don't let the sheep and the wolves population grow too large
+globals [ max-plants max-sheep max-wolves reproduce-radius walk sprint]  ;; don't let the sheep and the wolves population grow too large
 
 ; Sheep and wolves are both breeds of turtles
-breed [ sheep a-sheep ]  ; sheep is its own plural, so we use "a-sheep" as the singular
-breed [ wolves wolf ]  ; wolves is its own plural, so we use wolf as the singular
-breed [ plants plant ]
+breed [ sheep a-sheep ]  ;; sheep is its own plural, so we use "a-sheep" as the singular
+breed [ wolves wolf ] 
+breed [ plants plant ]  ;; plants are turtles, in this way they can "diverge"
 
-turtles-own [ energy ] ; both wolves and sheep have energy
-patches-own [ countdown ]
+turtles-own [ energy ] ;; used to decide the death of a turtle
+patches-own [ countdown ] ;; used to make the number of plants under control
 
 to setup
 
@@ -15,8 +15,9 @@ to setup
   set max-sheep 10000
   set max-wolves 10000
 
-  set reproduce-radius 1
+  set reproduce-radius 1 ;; used only for plants
 
+  ;; parameters for the model with hunt-flee mechanism
   set walk 1
   set sprint 1.5
 
@@ -25,7 +26,7 @@ to setup
     set countdown random countdown-regrowth
   ]
 
-  create-plants initial-number-plants
+  create-plants initial-number-plants ;; create the plants, then initialize their variables
   [
     set shape "plant"
     set color green - 2
@@ -35,7 +36,7 @@ to setup
     setxy random-xcor random-ycor
   ]
 
-  create-sheep initial-number-sheep  ; create the sheep, then initialize their variables
+  create-sheep initial-number-sheep  ;; create the sheep, then initialize their variables
   [
     set shape  "sheep"
     set color white
@@ -45,7 +46,7 @@ to setup
     setxy random-xcor random-ycor
   ]
 
-  create-wolves initial-number-wolves  ; create the wolves, then initialize their variables
+  create-wolves initial-number-wolves  ;; create the wolves, then initialize their variables
   [
     set shape "wolf"
     set color black
@@ -59,11 +60,9 @@ to setup
 end
 
 to go
-  ; stop the model if there are no wolves and no sheep
-  if not any? turtles [ ; user-message "The eco-system didn't survive."
-    stop ]
-  if count sheep >= max-sheep or count plants >= max-plants or count wolves >= max-wolves [ ; user-message "The eco-system didn't survive."
-    stop ]
+  ;; stop the model if there are critical situations
+  if not any? turtles [ user-message "The eco-system didn't survive." stop ]
+  if count sheep >= max-sheep or count plants >= max-plants or count wolves >= max-wolves [ user-message "The world will crash." stop ]
 
 ;; to impose at the plants to grown only if the patch is free
 ;  ask patches with [ not any? plants-here ] [
@@ -80,7 +79,6 @@ to go
     self-interaction
     same-species-interaction
     different-species-interaction
-    ;reproduce-plants
     death
   ]
 
@@ -112,7 +110,7 @@ to go
 end
 
 
-to move  ; turtle procedure
+to move  ;; turtle procedure for moving randomly
 
   rt random 50
   lt random 50
@@ -140,6 +138,7 @@ end
 to same-species-interaction
 
   ;; interaction between same species (sharing or fighiting)
+  ;; they only lose or gain energy they won't die directly
   if breed = plants [
     let the-other one-of other plants-here
     if the-other != nobody [
@@ -166,11 +165,10 @@ to same-species-interaction
 
 end
 
-
-
 to different-species-interaction
 
   ;; interaction between different species
+  ;; their energy will increase or decrease depending on the sign, but they won't die directly
   if breed = plants [
     ;; plants <-- sheep
     if a12 > 0 [ eat-sheep ]
@@ -203,9 +201,9 @@ to different-species-interaction
 
 end
 
-to death  ; turtle procedure (i.e. both wolf and sheep procedure)
+to death
 
-  ; when energy dips below zero, die
+  ; when energy dips below a treshold, die
   if energy <= 10 [ die ]
 
 end
@@ -275,20 +273,16 @@ to eat-plants
 
   if breed = sheep [
     let prey one-of plants-here
-    ; let prey one-of plants in-radius 1
     if prey != nobody [
       set energy (energy + a21 * [energy] of prey)
-      ;ask prey [die]
       ask prey [ set energy energy * ( 1 - a21 ) ]
     ]
   ]
 
   if breed = wolves [
     let prey one-of plants-here
-    ; let prey one-of plants in-radius 1
     if prey != nobody [
       set energy (energy + a31 * [energy] of prey)
-      ;ask prey [die]
       ask prey [ set energy energy * ( 1 - a31 ) ]
     ]
   ]
@@ -299,20 +293,15 @@ to eat-sheep  ; wolf procedure
 
   if breed = plants [
     let prey one-of sheep-here
-    ; let prey one-of sheep in-radius 1
     if prey != nobody [
       set energy (energy + a12 * [energy] of prey)
-      ;ask prey [die]
       ask prey [ set energy energy * ( 1 - a12 ) ]
     ]
   ]
 
   if breed = wolves [
     let prey one-of sheep-here
-    ; let prey one-of sheep in-radius 1
     if prey != nobody [
-      set energy (energy + a32 * [energy] of prey)
-      ;ask prey [die]
       ask prey [ set energy energy * ( 1 - a32 ) ]
     ]
   ]
@@ -323,7 +312,6 @@ to eat-wolves  ; wolf procedure
 
   if breed = plants [
     let prey one-of wolves-here
-    ; let prey one-of sheep in-radius 1
     if prey != nobody [
       set energy (energy + a13 * [energy] of prey)
       ;ask prey [die]
@@ -333,10 +321,8 @@ to eat-wolves  ; wolf procedure
 
   if breed = sheep [
     let prey one-of wolves-here
-    ; let prey one-of sheep in-radius 1
     if prey != nobody [
       set energy (energy + a23 * [energy] of prey)
-      ;ask prey [die]
       ask prey [ set energy energy * ( 1 - a23 ) ]
     ]
   ]
@@ -347,19 +333,15 @@ to get-eaten-plants
 
   if breed = sheep [
     let predator one-of plants-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a21 * energy)
-      ;ask prey [die]
     ]
   ]
 
   if breed = wolves [
     let predator one-of plants-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a31 * energy)
-      ;ask prey [die]
     ]
   ]
 
@@ -369,19 +351,15 @@ to get-eaten-sheep
 
   if breed = plants [
     let predator one-of sheep-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a12 * energy)
-      ;ask prey [die]
     ]
   ]
 
   if breed = wolves [
     let predator one-of sheep-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a32 * energy)
-      ;ask prey [die]
     ]
   ]
 
@@ -391,19 +369,15 @@ to get-eaten-wolves
 
   if breed = plants [
     let predator one-of wolves-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a13 * energy)
-      ;ask prey [die]
     ]
   ]
 
   if breed = sheep [
     let predator one-of wolves-here
-    ; let prey one-of sheep in-radius 1
     if predator != nobody [
       set energy (energy +  a23 * energy)
-      ;ask prey [die]
     ]
   ]
 
