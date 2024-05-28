@@ -2,7 +2,7 @@ globals [ max-plants max-sheep max-wolves reproduce-radius walk sprint]  ;; don'
 
 ; Sheep and wolves are both breeds of turtles
 breed [ sheep a-sheep ]  ;; sheep is its own plural, so we use "a-sheep" as the singular
-breed [ wolves wolf ] 
+breed [ wolves wolf ]
 breed [ plants plant ]  ;; plants are turtles, in this way they can "diverge"
 
 turtles-own [ energy ] ;; used to decide the death of a turtle
@@ -143,7 +143,7 @@ to same-species-interaction
     let the-other one-of other plants-here
     if the-other != nobody [
       set energy energy + a11
-      ask the-other [ set energy energy + a11 ]
+      ; ask the-other [ set energy energy + a11 ]
     ]
   ]
 
@@ -151,7 +151,7 @@ to same-species-interaction
     let the-other one-of other sheep-here
     if the-other != nobody [
       set energy energy + a22
-      ask the-other [ set energy energy + a22 ]
+      ; ask the-other [ set energy energy + a22 ]
     ]
   ]
 
@@ -159,7 +159,7 @@ to same-species-interaction
     let the-other one-of other wolves-here
     if the-other != nobody [
       set energy energy + a33
-      ask the-other [ set energy energy + a33 ]
+      ; ask the-other [ set energy energy + a33 ]
     ]
   ]
 
@@ -275,7 +275,7 @@ to eat-plants
     let prey one-of plants-here
     if prey != nobody [
       set energy (energy + a21 * [energy] of prey)
-      ask prey [ set energy energy * ( 1 - a21 ) ]
+      ; ask prey [ set energy energy * ( 1 - a21 ) ]
     ]
   ]
 
@@ -283,7 +283,7 @@ to eat-plants
     let prey one-of plants-here
     if prey != nobody [
       set energy (energy + a31 * [energy] of prey)
-      ask prey [ set energy energy * ( 1 - a31 ) ]
+      ; ask prey [ set energy energy * ( 1 - a31 ) ]
     ]
   ]
 
@@ -295,14 +295,15 @@ to eat-sheep  ; wolf procedure
     let prey one-of sheep-here
     if prey != nobody [
       set energy (energy + a12 * [energy] of prey)
-      ask prey [ set energy energy * ( 1 - a12 ) ]
+      ; ask prey [ set energy energy * ( 1 - a12 ) ]
     ]
   ]
 
   if breed = wolves [
     let prey one-of sheep-here
     if prey != nobody [
-      ask prey [ set energy energy * ( 1 - a32 ) ]
+      set energy (energy + a32 * [energy] of prey)
+      ; ask prey [ set energy energy * ( 1 - a32 ) ]
     ]
   ]
 
@@ -314,8 +315,7 @@ to eat-wolves  ; wolf procedure
     let prey one-of wolves-here
     if prey != nobody [
       set energy (energy + a13 * [energy] of prey)
-      ;ask prey [die]
-      ask prey [ set energy energy * ( 1 - a13 ) ]
+      ; ask prey [ set energy energy * ( 1 - a13 ) ]
     ]
   ]
 
@@ -323,7 +323,7 @@ to eat-wolves  ; wolf procedure
     let prey one-of wolves-here
     if prey != nobody [
       set energy (energy + a23 * [energy] of prey)
-      ask prey [ set energy energy * ( 1 - a23 ) ]
+      ; ask prey [ set energy energy * ( 1 - a23 ) ]
     ]
   ]
 
