@@ -6,14 +6,15 @@ breed [ wolves wolf ]
 breed [ plants plant ]  ;; plants are turtles, in this way they can "diverge"
 
 turtles-own [ energy ] ;; used to decide the death of a turtle
+plants-own [ waiting ] ;; used to make the new born plants wait before creating others plants (usefull to extinction)
 patches-own [ countdown ] ;; used to make the number of plants under control
 
 to setup
 
   clear-all
-  set max-plants 10000
-  set max-sheep 10000
-  set max-wolves 10000
+  set max-plants 100000
+  set max-sheep 100000
+  set max-wolves 100000
 
   set reproduce-radius 1 ;; used only for plants
 
@@ -34,6 +35,7 @@ to setup
     set label-color blue - 2
     set energy random 100
     setxy random-xcor random-ycor
+    set waiting 1
   ]
 
   create-sheep initial-number-sheep  ;; create the sheep, then initialize their variables
@@ -72,13 +74,14 @@ to go
 
    ask patches [
     set countdown countdown - 1
-    reproduce-plants
+    ; reproduce-plants
   ]
 
   ask plants [
     self-interaction
     same-species-interaction
     different-species-interaction
+    reproduce-plants
     death
   ]
 
@@ -224,18 +227,38 @@ to reproduce-plants
 ;     ]
 ;  ]
 
-  ;; plants reproduction without parents
+;  ;; plants reproduction without parents
+;  if count plants < max-plants [
+;    if countdown <= 0 [
+;        sprout-plants 1 [
+;          set shape "plant"
+;          set color green - 2
+;          set size 1
+;          set energy random 100
+;          setxy xcor ycor
+;          set countdown countdown-regrowth
+;        ]
+;     ]
+;  ]
+
+  ;; plants reproduction with a parent
   if count plants < max-plants [
-    if countdown <= 0 [
-        sprout-plants 1 [
-          set shape "plant"
-          set color green - 2
-          set size 1
-          set energy random 100
-          setxy xcor ycor
-          set countdown countdown-regrowth
+    ifelse waiting <= 0 [
+      let chosen-patch one-of patches with [ countdown <= 0 ]  ; the radius is not needed though it helps with the calculations
+      if chosen-patch != nobody [
+        ask chosen-patch[
+          sprout-plants 1 [
+            set shape "plant"
+            set color green - 2
+            set size 1
+            set energy random 100
+            setxy xcor ycor
+            set waiting 1
+          ]
+          set countdown random countdown-regrowth
         ]
-     ]
+      ]
+    ] [ set waiting waiting - 1]
   ]
 
 end
@@ -456,7 +479,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-168.0
+150.0
 1
 1
 NIL
@@ -471,7 +494,7 @@ r2
 r2
 -1.0
 1.0
--0.02
+-0.09
 0.01
 1
 NIL
@@ -486,10 +509,10 @@ a21
 a21
 -1.0
 1.0
-0.7
+1.0
 0.01
 1
-1
+NIL
 HORIZONTAL
 
 SLIDER
@@ -501,7 +524,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-80.0
+100.0
 1
 1
 NIL
@@ -623,7 +646,7 @@ initial-number-plants
 initial-number-plants
 0
 2601
-1070.0
+500.0
 1
 1
 NIL
@@ -683,7 +706,7 @@ a23
 a23
 -1.0
 1.0
--0.4
+-0.09
 0.01
 1
 NIL
@@ -698,7 +721,7 @@ r3
 r3
 -1.0
 1.0
--0.34
+-1.0
 0.01
 1
 NIL
@@ -728,7 +751,7 @@ a32
 a32
 -1.0
 1.0
-0.13
+0.05
 0.01
 1
 NIL
@@ -743,7 +766,7 @@ a33
 a33
 -1.0
 1.0
-0.0
+-1.0
 0.01
 1
 NIL
@@ -758,7 +781,7 @@ r1
 r1
 -1.0
 1.0
-0.34
+0.22
 0.01
 1
 NIL
@@ -773,7 +796,7 @@ a11
 a11
 -1.0
 1.0
--0.03
+-0.56
 0.01
 1
 NIL
@@ -788,7 +811,7 @@ a12
 a12
 -1.0
 1.0
--0.7
+-1.0
 0.01
 1
 NIL
@@ -832,9 +855,9 @@ SLIDER
 countdown-regrowth
 countdown-regrowth
 0
-50
-15.0
-1
+100
+30.0
+10
 1
 NIL
 HORIZONTAL
