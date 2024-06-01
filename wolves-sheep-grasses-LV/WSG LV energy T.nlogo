@@ -145,24 +145,21 @@ to same-species-interaction
   if breed = plants [
     let the-other one-of other plants-here
     if the-other != nobody [
-      set energy energy + a11
-      ; ask the-other [ set energy energy + a11 ]
+      set energy energy + a11 * [energy] of the-other
     ]
   ]
 
   if breed = sheep [
     let the-other one-of other sheep-here
     if the-other != nobody [
-      set energy energy + a22
-      ; ask the-other [ set energy energy + a22 ]
+      set energy energy + a22 * [energy] of the-other
     ]
   ]
 
   if breed = wolves [
     let the-other one-of other wolves-here
     if the-other != nobody [
-      set energy energy + a33
-      ; ask the-other [ set energy energy + a33 ]
+      set energy energy + a33 * [energy] of the-other
     ]
   ]
 
@@ -174,32 +171,57 @@ to different-species-interaction
   ;; their energy will increase or decrease depending on the sign, but they won't die directly
   if breed = plants [
     ;; plants <-- sheep
-    if a12 > 0 [ eat-sheep ]
-    if a12 < 0 [ get-eaten-sheep ]
+;    if a12 > 0 [ eat-sheep ]
+;    if a12 < 0 [ get-eaten-sheep ]
+    let versus-sheep one-of sheep-here
+    if versus-sheep != nobody [
+      set energy (energy + a12 * [energy] of versus-sheep)
+    ]
 
     ;; plants <-- wolves
-    if a13 > 0 [ eat-wolves ]
-    if a13 < 0 [get-eaten-wolves ]
+;    if a13 > 0 [ eat-wolves ]
+;    if a13 < 0 [ get-eaten-wolves ]
+    let versus-wolf one-of wolves-here
+    if versus-wolf != nobody [
+      set energy (energy + a13 * [energy] of versus-wolf)
+    ]
   ]
 
   if breed = sheep [
     ;; sheep <-- plants
-    if a21 > 0 [ eat-plants ]
-    if a21 < 0 [ get-eaten-plants ]
+;    if a21 > 0 [ eat-plants ]
+;    if a21 < 0 [ get-eaten-plants ]
+    let versus-plant one-of plants-here
+    if versus-plant != nobody [
+      set energy (energy + a21 * [energy] of versus-plant)
+    ]
 
     ;; sheep <-- wolves
-    if a23 > 0 [ eat-wolves ]
-    if a23 < 0 [ get-eaten-wolves ]
+;    if a23 > 0 [ eat-wolves ]
+;    if a23 < 0 [ get-eaten-wolves ]
+    let versus-wolf one-of wolves-here
+    if versus-wolf != nobody [
+      set energy (energy + a23 * [energy] of versus-wolf)
+    ]
+
   ]
 
   if breed = wolves [
     ;; wolves <-- plants
-    if a31 > 0 [ eat-plants ]
-    if a31 < 0 [ get-eaten-plants ]
+;    if a31 > 0 [ eat-plants ]
+;    if a31 < 0 [ get-eaten-plants ]
+    let versus-plant one-of plants-here
+    if versus-plant != nobody [
+      set energy (energy + a31 * [energy] of versus-plant)
+    ]
 
     ;; wolves <-- sheep
-    if a32 > 0 [ eat-sheep ]
-    if a32 < 0 [ get-eaten-sheep ]
+;    if a32 > 0 [ eat-sheep ]
+;    if a32 < 0 [ get-eaten-sheep ]
+    let versus-sheep one-of sheep-here
+    if versus-sheep != nobody [
+      set energy (energy + a32 * [energy] of versus-sheep)
+    ]
   ]
 
 end
@@ -292,119 +314,119 @@ to reproduce-wolves  ; wolf procedure
 
 end
 
-to eat-plants
-
-  if breed = sheep [
-    let prey one-of plants-here
-    if prey != nobody [
-      set energy (energy + a21 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a21 ) ]
-    ]
-  ]
-
-  if breed = wolves [
-    let prey one-of plants-here
-    if prey != nobody [
-      set energy (energy + a31 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a31 ) ]
-    ]
-  ]
-
-end
-
-to eat-sheep  ; wolf procedure
-
-  if breed = plants [
-    let prey one-of sheep-here
-    if prey != nobody [
-      set energy (energy + a12 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a12 ) ]
-    ]
-  ]
-
-  if breed = wolves [
-    let prey one-of sheep-here
-    if prey != nobody [
-      set energy (energy + a32 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a32 ) ]
-    ]
-  ]
-
-end
-
-to eat-wolves  ; wolf procedure
-
-  if breed = plants [
-    let prey one-of wolves-here
-    if prey != nobody [
-      set energy (energy + a13 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a13 ) ]
-    ]
-  ]
-
-  if breed = sheep [
-    let prey one-of wolves-here
-    if prey != nobody [
-      set energy (energy + a23 * [energy] of prey)
-      ; ask prey [ set energy energy * ( 1 - a23 ) ]
-    ]
-  ]
-
-end
-
-to get-eaten-plants
-
-  if breed = sheep [
-    let predator one-of plants-here
-    if predator != nobody [
-      set energy (energy +  a21 * energy)
-    ]
-  ]
-
-  if breed = wolves [
-    let predator one-of plants-here
-    if predator != nobody [
-      set energy (energy +  a31 * energy)
-    ]
-  ]
-
-end
-
-to get-eaten-sheep
-
-  if breed = plants [
-    let predator one-of sheep-here
-    if predator != nobody [
-      set energy (energy +  a12 * energy)
-    ]
-  ]
-
-  if breed = wolves [
-    let predator one-of sheep-here
-    if predator != nobody [
-      set energy (energy +  a32 * energy)
-    ]
-  ]
-
-end
-
-to get-eaten-wolves
-
-  if breed = plants [
-    let predator one-of wolves-here
-    if predator != nobody [
-      set energy (energy +  a13 * energy)
-    ]
-  ]
-
-  if breed = sheep [
-    let predator one-of wolves-here
-    if predator != nobody [
-      set energy (energy +  a23 * energy)
-    ]
-  ]
-
-end
+;to eat-plants
+;
+;  if breed = sheep [
+;    let prey one-of plants-here
+;    if prey != nobody [
+;      set energy (energy + a21 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a21 ) ]
+;    ]
+;  ]
+;
+;  if breed = wolves [
+;    let prey one-of plants-here
+;    if prey != nobody [
+;      set energy (energy + a31 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a31 ) ]
+;    ]
+;  ]
+;
+;end
+;
+;to eat-sheep  ; wolf procedure
+;
+;  if breed = plants [
+;    let prey one-of sheep-here
+;    if prey != nobody [
+;      set energy (energy + a12 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a12 ) ]
+;    ]
+;  ]
+;
+;  if breed = wolves [
+;    let prey one-of sheep-here
+;    if prey != nobody [
+;      set energy (energy + a32 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a32 ) ]
+;    ]
+;  ]
+;
+;end
+;
+;to eat-wolves  ; wolf procedure
+;
+;  if breed = plants [
+;    let prey one-of wolves-here
+;    if prey != nobody [
+;      set energy (energy + a13 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a13 ) ]
+;    ]
+;  ]
+;
+;  if breed = sheep [
+;    let prey one-of wolves-here
+;    if prey != nobody [
+;      set energy (energy + a23 * [energy] of prey)
+;      ; ask prey [ set energy energy * ( 1 - a23 ) ]
+;    ]
+;  ]
+;
+;end
+;
+;to get-eaten-plants
+;
+;  if breed = sheep [
+;    let predator one-of plants-here
+;    if predator != nobody [
+;      set energy (energy +  a21 * energy)
+;    ]
+;  ]
+;
+;  if breed = wolves [
+;    let predator one-of plants-here
+;    if predator != nobody [
+;      set energy (energy +  a31 * energy)
+;    ]
+;  ]
+;
+;end
+;
+;to get-eaten-sheep
+;
+;  if breed = plants [
+;    let predator one-of sheep-here
+;    if predator != nobody [
+;      set energy (energy +  a12 * energy)
+;    ]
+;  ]
+;
+;  if breed = wolves [
+;    let predator one-of sheep-here
+;    if predator != nobody [
+;      set energy (energy +  a32 * energy)
+;    ]
+;  ]
+;
+;end
+;
+;to get-eaten-wolves
+;
+;  if breed = plants [
+;    let predator one-of wolves-here
+;    if predator != nobody [
+;      set energy (energy +  a13 * energy)
+;    ]
+;  ]
+;
+;  if breed = sheep [
+;    let predator one-of wolves-here
+;    if predator != nobody [
+;      set energy (energy +  a23 * energy)
+;    ]
+;  ]
+;
+;end
 
 ;; functions for the hunting and flee mechanism
 to  hunt-plants
@@ -494,7 +516,7 @@ r2
 r2
 -1.0
 1.0
--0.09
+-0.1
 0.01
 1
 NIL
@@ -509,7 +531,7 @@ a21
 a21
 -1.0
 1.0
-1.0
+0.1
 0.01
 1
 NIL
@@ -691,7 +713,7 @@ a22
 a22
 -1.0
 1.0
-0.0
+-0.05
 0.01
 1
 NIL
@@ -706,7 +728,7 @@ a23
 a23
 -1.0
 1.0
--0.09
+-0.4
 0.01
 1
 NIL
@@ -721,7 +743,7 @@ r3
 r3
 -1.0
 1.0
--1.0
+-0.27
 0.01
 1
 NIL
@@ -751,7 +773,7 @@ a32
 a32
 -1.0
 1.0
-0.05
+0.15
 0.01
 1
 NIL
@@ -766,7 +788,7 @@ a33
 a33
 -1.0
 1.0
--1.0
+-0.09
 0.01
 1
 NIL
@@ -796,7 +818,7 @@ a11
 a11
 -1.0
 1.0
--0.56
+-0.14
 0.01
 1
 NIL
@@ -811,7 +833,7 @@ a12
 a12
 -1.0
 1.0
--1.0
+-0.08
 0.01
 1
 NIL
