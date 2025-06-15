@@ -13,20 +13,24 @@ to setup
   clear-all
 
   ; [r1 a11 a12 a13 r2 a21 a22 a23 r3 a31 a32 a33]
-  ; Case r2 = 0:
 
+  ; parameters from mathematical simulations on Matlab
+  ; Case r2 = 0:
   ; Simulation SS3 n1: Wolves > Sheep > Grass
   ;set array [0.1 -0.2 -0.03 0 0 0.1 0 -0.02 -0.04 0 0.04 0]
   ; Simulation SS3 n2: Grass > Sheep > Wolves
-  ;set array [0.34 -0.1 -0.17 0 0 0.16 0 -0.4 -0.05 0 0.13 0]
+  ;set array [0.34 -0.1 -0.7 0 0 0.16 0 -0.4 -0.05 0 0.13 0]
 
   ; Case r2 < 0:
+  ; Simulation SS4 n1:
+  ;set array [0.24 -0.1 -0.7 0 -0.02 0.4 0 -0.4 -0.05 0 0.13 0]
+
   ; Simulation SS5 n1: Grass > Sheep > Wolves
   ;set array [0.34 -0.1 -0.7 0 -0.02 0.16 0 -0.4 -0.05 0 0.13 0]
   ; Simulation SS5 n2: Grass > Wolves > Sheep
   ;set array [0.34 -0.1 -0.7 0 -0.02 0.3 0 -0.4 -0.05 0 0.13 0]
   ; Simulation SS5 n3: Grass > Wolves > Sheep
-  ;set array [0.34 -0.1 -0.7 0 -0.02 0.4 0 -0.4 -0.05 0 0.13 0]
+  ;set array [0.3 -0.1 -0.7 0 -0.02 0.4 0 -0.4 -0.05 0 0.13 0]
   ; Simulation SS5 n4: Wolves > Grass > Sheep
   ;set array [0.34 -0.1 -0.7 0 -0.02 0.7 0 -0.4 -0.05 0 0.13 0]
   ; Simulation SS5 n5: Sheep > Wolves > Grass
@@ -68,10 +72,10 @@ to go
     ; r1 = regrowth
     if ( random-float 1 < (abs  r1) ) and ( pcolor = brown ) [set pcolor green]
 
-    ; a11 = self limitation
-    if ( random-float 1 < (abs a11) ) and ( pcolor = green ) and ( any? neighbors with [pcolor = green] ) [set pcolor brown]
+    ; a11 = self limitation (the neighbors is full, no more space)
+    if ( random-float 1 < (abs a11) ) and ( pcolor = green ) and ( (count neighbors with [pcolor = green]) = 8 ) [set pcolor brown]
 
-    ; a12 = predation mechanism from sheep over grasses
+    ; a12 = death (predation mechanism from sheep over grasses)
     if ( random-float 1 < (abs a12) ) and ( pcolor = green ) and ( any? sheep-here ) [set pcolor brown]
 
     ; a13 = interaction between grasses and wolves
@@ -79,7 +83,6 @@ to go
   ]
 
   ask sheep [
-    move
     ; r2 = natural death
     if ( random-float 1 < (abs  r2) ) [die]
 
@@ -94,7 +97,6 @@ to go
   ]
 
   ask wolves [
-    move
     ; r3 = natural death
     if ( random-float 1 < (abs  r3) ) [die]
 
@@ -108,13 +110,18 @@ to go
     if ( random-float 1 < (abs a33) ) and ( any? wolves-here ) [die]
   ]
 
+  move
+
   tick
 end
 
 to move  ; turtle procedure
-  rt random 50
-  lt random 50
-  fd 1
+  ask turtles [
+    rt random 50
+    lt random 50
+    fd 1
+  ]
+
 end
 
 to set-matrix-parameters
@@ -184,7 +191,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-100.0
+157.0
 1
 1
 NIL
@@ -199,7 +206,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-106.0
+146.0
 1
 1
 NIL
@@ -214,7 +221,7 @@ initial-number-grasses
 initial-number-grasses
 0
 (max-pxcor - min-pxcor + 1)*(max-pycor - min-pycor + 1)
-1109.0
+504.0
 1
 1
 NIL
@@ -391,7 +398,7 @@ SLIDER
 .a21
 -1
 1
-0.16
+0.15
 0.01
 1
 NIL
@@ -466,7 +473,7 @@ SLIDER
 .a32
 -1
 1
-0.13
+0.29
 0.01
 1
 NIL
